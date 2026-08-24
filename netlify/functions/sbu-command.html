@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SBU Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Raleway:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --black: #0A0F14; --navy: #1A2330; --steel: #2D3A4A;
+    --blue: #00B2FF; --orange: #FF6B00; --gold: #FFC107; --gray: #D9D9D9;
+    --head: "Bebas Neue", sans-serif; --body: "Raleway", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(circle at 50% 0%, var(--navy) 0%, var(--black) 70%);
+    color: var(--gray); font-family: var(--body); font-size: 18px; line-height: 1.55;
+    min-height: 100vh; display: flex; flex-direction: column;
+  }
+  header { border-bottom: 2px solid var(--steel); padding: 18px 22px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  header h1 { font-family: var(--head); font-size: 42px; letter-spacing: 2px; color: var(--gray); line-height: 1; }
+  header h1 .accent { color: var(--blue); }
+  header .tagline { font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--steel); font-weight: 600; }
+
+  main { flex: 1; display: grid; grid-template-columns: 1fr 340px; gap: 20px; padding: 22px; max-width: 1200px; width: 100%; margin: 0 auto; }
+  @media (max-width: 820px) { main { grid-template-columns: 1fr; } }
+
+  .core, .dispatch, .workbench { background: var(--navy); border: 1px solid var(--steel); border-radius: 16px; padding: 24px; }
+  .core { display: flex; flex-direction: column; }
+
+  .orb-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 6px 0 20px; }
+  .orb {
+    width: 140px; height: 140px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--steel), var(--navy) 70%);
+    border: 3px solid var(--steel); box-shadow: 0 0 0 0 rgba(0,178,255,0);
+    transition: border-color .25s ease, box-shadow .25s ease; position: relative;
+  }
+  .orb::after { content: ""; position: absolute; inset: 30%; border-radius: 50%; background: var(--steel); opacity: .5; transition: background .25s ease; }
+  .orb.listening { border-color: var(--blue); animation: pulseBlue 1.4s ease-in-out infinite; }
+  .orb.listening::after { background: var(--blue); }
+  .orb.thinking { border-color: var(--gold); animation: spin 2.2s linear infinite; }
+  .orb.thinking::after { background: var(--gold); }
+  .orb.speaking { border-color: var(--orange); animation: pulseOrange 1s ease-in-out infinite; }
+  .orb.speaking::after { background: var(--orange); }
+  .orb.awake { border-color: var(--gold); }
+  @keyframes pulseBlue { 0%,100% { box-shadow: 0 0 0 0 rgba(0,178,255,.5); } 50% { box-shadow: 0 0 0 22px rgba(0,178,255,0); } }
+  @keyframes pulseOrange { 0%,100% { box-shadow: 0 0 0 0 rgba(255,107,0,.5); } 50% { box-shadow: 0 0 0 18px rgba(255,107,0,0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status { font-family: var(--head); font-size: 22px; letter-spacing: 2px; color: var(--blue); text-transform: uppercase; min-height: 26px; text-align: center; }
+
+  .controls { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  button { font-family: var(--body); font-weight: 700; font-size: 17px; border-radius: 10px; border: 2px solid transparent; padding: 14px 20px; min-height: 56px; cursor: pointer; transition: transform .1s ease, filter .15s ease; }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .btn-primary { background: var(--blue); color: var(--black); }
+  .btn-primary.active { background: var(--orange); }
+  .btn-live { background: transparent; color: var(--gold); border-color: var(--gold); }
+  .btn-live.on { background: var(--gold); color: var(--black); }
+  .btn-ghost { background: transparent; color: var(--gray); border-color: var(--steel); }
+  .btn-ghost:hover { filter: brightness(1.3); }
+  .btn-small { min-height: 42px; padding: 8px 14px; font-size: 15px; }
+  button:disabled { opacity: .4; cursor: default; }
+
+  .live-hint { text-align: center; font-size: 14px; color: var(--steel); margin-top: 10px; min-height: 18px; }
+
+  .type-row { display: flex; gap: 10px; margin-top: 14px; }
+  .type-row input { flex: 1; background: var(--black); border: 1px solid var(--steel); border-radius: 10px; color: var(--gray); font-family: var(--body); font-size: 17px; padding: 14px 16px; min-height: 56px; }
+  .type-row input:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; }
+
+  .transcript { margin-top: 22px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; max-height: 38vh; }
+  .msg { border-radius: 12px; padding: 14px 16px; max-width: 92%; }
+  .msg.you { align-self: flex-end; background: var(--steel); color: #fff; }
+  .msg.nova { align-self: flex-start; background: var(--black); border: 1px solid var(--steel); border-left: 4px solid var(--blue); }
+  .msg .who { font-family: var(--head); font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-bottom: 4px; }
+  .msg.you .who { color: var(--gold); }
+  .msg.nova .who { color: var(--blue); }
+
+  .dispatch h2, .workbench h2 { font-family: var(--head); font-size: 24px; letter-spacing: 2px; color: var(--gray); text-transform: uppercase; border-bottom: 1px solid var(--steel); padding-bottom: 10px; margin-bottom: 14px; }
+  .dispatch-feed { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 40vh; }
+  .dispatch-item { background: var(--black); border: 1px solid var(--steel); border-left: 4px solid var(--orange); border-radius: 8px; padding: 10px 12px; font-size: 15px; }
+  .dispatch-item .channel { font-family: var(--head); letter-spacing: 1px; color: var(--orange); font-size: 16px; text-transform: uppercase; }
+  .dispatch-item .companion { color: var(--gold); font-weight: 700; }
+  .dispatch-item .state { display: block; font-size: 13px; color: var(--steel); margin-top: 3px; text-transform: uppercase; letter-spacing: 1px; }
+  .dispatch-item .state.done { color: var(--blue); }
+  .dispatch-empty { color: var(--steel); font-style: italic; font-size: 15px; }
+
+  .pillars { margin-top: 16px; border-top: 1px solid var(--steel); padding-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .pillar { font-family: var(--head); letter-spacing: 1px; font-size: 14px; color: var(--steel); border: 1px solid var(--steel); border-radius: 20px; padding: 4px 12px; text-transform: uppercase; }
+
+  .workbench-wrap { max-width: 1200px; width: 100%; margin: 0 auto; padding: 0 22px 22px; }
+  .job { background: var(--black); border: 1px solid var(--steel); border-left: 5px solid var(--gold); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .job-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .job-badge { font-family: var(--head); letter-spacing: 1.5px; font-size: 18px; color: var(--gold); text-transform: uppercase; }
+  .job-state { font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--blue); }
+  .job-steps { list-style: none; display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+  .job-steps li { font-size: 15px; padding-left: 22px; position: relative; }
+  .job-steps li::before { content: "\25CB"; position: absolute; left: 0; color: var(--steel); }
+  .job-steps li.done::before { content: "\25CF"; color: var(--blue); }
+  .job-steps li.active::before { content: "\25CF"; color: var(--gold); }
+  .job-output { background: var(--navy); border: 1px solid var(--steel); border-radius: 8px; padding: 14px; margin-top: 10px; white-space: pre-wrap; font-size: 16px; line-height: 1.6; }
+  .job-actions { margin-top: 10px; display: flex; gap: 10px; }
+
+  footer { text-align: center; padding: 14px; font-size: 13px; color: var(--steel); letter-spacing: 1px; }
+
+  @media (prefers-reduced-motion: reduce) { .orb, .orb.listening, .orb.thinking, .orb.speaking { animation: none !important; } }
+</style>
+</head>
+<body>
+  <header>
+    <h1>SBU <span class="accent">COMMAND</span></h1>
+    <span class="tagline">Breaking the Silence. Building Brotherhood. Standing Together.</span>
+  </header>
+
+  <main>
+    <section class="core" aria-label="Voice command console">
+      <div class="orb-wrap">
+        <div id="orb" class="orb" role="img" aria-label="Assistant status indicator"></div>
+        <div id="status" class="status" aria-live="polite">Ready</div>
+      </div>
+      <div class="controls">
+        <button id="liveBtn" class="btn-live" aria-pressed="false">Live mode</button>
+        <button id="talkBtn" class="btn-primary" aria-pressed="false">Hold to talk</button>
+        <button id="voiceToggle" class="btn-ghost" aria-pressed="true">Voice on</button>
+        <button id="stopBtn" class="btn-ghost">Stop</button>
+      </div>
+      <div id="liveHint" class="live-hint"></div>
+      <div class="type-row">
+        <input id="textInput" type="text" placeholder="Or type a command and press Enter" aria-label="Type a command" />
+        <button id="sendBtn" class="btn-primary">Send</button>
+      </div>
+      <div id="transcript" class="transcript" aria-live="polite" aria-label="Conversation"></div>
+    </section>
+
+    <aside class="dispatch" aria-label="Dispatch panel">
+      <h2>Dispatch</h2>
+      <div id="dispatchFeed" class="dispatch-feed">
+        <div class="dispatch-empty">Routing appears here as Nova handles each request.</div>
+      </div>
+      <div class="pillars" aria-label="SBU pillars">
+        <span class="pillar">Identity</span><span class="pillar">Freedom</span><span class="pillar">Faith</span><span class="pillar">Purpose</span><span class="pillar">Brotherhood</span>
+      </div>
+    </aside>
+  </main>
+
+  <div class="workbench-wrap">
+    <section class="workbench" aria-label="Agent workbench">
+      <h2>Workbench</h2>
+      <div id="jobs"><p class="dispatch-empty">When Nova hands a job to an agent, the work shows up here.</p></div>
+    </section>
+  </div>
+
+  <footer>Nova core online. Four agents standing by: Producer, Scribe, Scout, Field.</footer>
+
+<script>
+// ===================================================================
+// SBU COMMAND. Voice-first assistant, four working agents, and live mode.
+// Live mode: say "Nova" to wake her, then talk back and forth hands-free.
+// ===================================================================
+const ASSISTANT_NAME = "Nova";
+const WAKE_WORD = "nova";
+const AWAKE_TIMEOUT_MS = 12000; // how long she keeps listening after a turn before returning to wake-word watch
+
+const HOUSE = `House rules you always follow:
+- Never use em dashes anywhere. Use commas, periods, or reworded phrasing instead.
+- Robert Bedard runs Struggling Brothers United (SBU) and Neuro Static Pulse (NSP) under The Freedom Remnant Studio. He is a life coach, speaker, and storyteller. He is not a minister, so never call him one.
+- SBU tagline: Breaking the Silence. Building Brotherhood. Standing Together.
+- The five pillars are Identity, Freedom, Faith, Purpose, Brotherhood.`;
+
+const ROUTER_PROMPT = `You are Nova, the orchestrator for SBU Command.
+${HOUSE}
+For every request you either answer it yourself or hand it to one agent.
+Agents:
+- Producer: drafts podcast scripts in OMI format.
+- Scribe: writes content such as devotionals, episode blurbs, and offer copy.
+- Scout: researches a topic on the live web and reports findings.
+- Field: a general agent that plans any goal into steps and works through them.
+Choose handoff only when the request is a real production or research job. Chat, questions, and quick help you answer yourself. Keep spoken replies short since they are read aloud.
+Respond ONLY with a JSON object, no markdown fences, in exactly this shape:
+{"channel":"General or SBU Studio or Research or Creative","companion":"Nova or Producer or Scribe or Scout or Field","mode":"reply or handoff","task":"a clear instruction for the agent, or empty if reply","reply":"what Nova says out loud to Robert now"}`;
+
+const PRODUCER_PROMPT = `You are Producer, the podcast script agent for SBU Command.
+${HOUSE}
+Write scripts in OMI Voice Synthesizer format: numbered chunks, each 150 to 250 words, natural spoken sentences. No em dashes, no ellipses, no quotation marks for emphasis, no asterisks, no bullet points inside the script. Keep it tight and ready to record.`;
+
+const SCRIBE_PROMPT = `You are Scribe, the content writer for SBU Command.
+${HOUSE}
+Write the requested content in a grounded, testimony driven, brotherhood voice. Deliver finished copy, ready to use.`;
+
+const SCOUT_PROMPT = `You are Scout, the research agent for SBU Command.
+${HOUSE}
+Research the topic on the live web. Return clear findings in plain language, then a short list of the sources you used with their titles.`;
+
+const FIELD_PLAN_PROMPT = `You are Field, a general task agent for SBU Command.
+${HOUSE}
+Break the goal into 2 to 4 concrete steps. Respond ONLY with JSON, no fences: {"steps":["step one","step two"]}`;
+
+const FIELD_STEP_PROMPT = `You are Field, working a multi step job for SBU Command.
+${HOUSE}
+Complete only the current step using the goal and any earlier results as context. Produce real output for this step.`;
+
+// ---- State ----
+let history = [];
+let voiceOn = true;
+let liveMode = false;
+let convo = "off";       // off, sleeping, awake, processing, speaking
+let recognizing = false;
+let awakeTimer = null;
+
+// ---- Elements ----
+const orb = document.getElementById("orb");
+const statusEl = document.getElementById("status");
+const liveBtn = document.getElementById("liveBtn");
+const talkBtn = document.getElementById("talkBtn");
+const voiceToggle = document.getElementById("voiceToggle");
+const stopBtn = document.getElementById("stopBtn");
+const textInput = document.getElementById("textInput");
+const sendBtn = document.getElementById("sendBtn");
+const transcript = document.getElementById("transcript");
+const dispatchFeed = document.getElementById("dispatchFeed");
+const jobs = document.getElementById("jobs");
+const liveHint = document.getElementById("liveHint");
+
+// ---- UI helpers ----
+function setState(state, label) { orb.className = "orb" + (state ? " " + state : ""); statusEl.textContent = label; }
+function setHint(t) { liveHint.textContent = t || ""; }
+
+function addMessage(who, text) {
+  const el = document.createElement("div");
+  el.className = "msg " + (who === "you" ? "you" : "nova");
+  el.innerHTML = '<span class="who">' + (who === "you" ? "You" : ASSISTANT_NAME) + "</span>";
+  const body = document.createElement("div"); body.textContent = text; el.appendChild(body);
+  transcript.appendChild(el); transcript.scrollTop = transcript.scrollHeight;
+}
+function addDispatch(channel, companion, state) {
+  const empty = dispatchFeed.querySelector(".dispatch-empty"); if (empty) empty.remove();
+  const el = document.createElement("div"); el.className = "dispatch-item";
+  el.innerHTML = '<span class="channel">' + channel + '</span> to <span class="companion">' + companion + '</span><span class="state">' + (state || "routed") + "</span>";
+  dispatchFeed.insertBefore(el, dispatchFeed.firstChild);
+  return el.querySelector(".state");
+}
+function newJob(agent) {
+  const empty = jobs.querySelector(".dispatch-empty"); if (empty) empty.remove();
+  const job = document.createElement("div"); job.className = "job";
+  job.innerHTML = '<div class="job-head"><span class="job-badge">' + agent + '</span><span class="job-state">working</span></div><ul class="job-steps"></ul><div class="job-output" style="display:none"></div><div class="job-actions" style="display:none"><button class="btn-primary btn-small copyBtn">Copy output</button></div>';
+  jobs.insertBefore(job, jobs.firstChild);
+  return { stateEl: job.querySelector(".job-state"), stepsEl: job.querySelector(".job-steps"), outEl: job.querySelector(".job-output"), actionsEl: job.querySelector(".job-actions"), copyEl: job.querySelector(".copyBtn") };
+}
+function finishJob(job, text) {
+  job.stateEl.textContent = "done"; job.stateEl.classList.add("done");
+  job.outEl.style.display = "block"; job.outEl.textContent = text;
+  job.actionsEl.style.display = "flex";
+  job.copyEl.addEventListener("click", () => { navigator.clipboard.writeText(text); job.copyEl.textContent = "Copied"; setTimeout(() => { job.copyEl.textContent = "Copy output"; }, 1500); });
+}
+
+// ===================================================================
+// VOICE OUTPUT. This is the single place Nova speaks.
+// TO USE YOUR OMI CLONED VOICE, replace the body of speak() with a call
+// that fetches OMI audio for the text and plays it, for example:
+//   const audio = new Audio(urlFromYourOmiFunction);
+//   audio.onplay = () => onSpeakStart();
+//   audio.onended = () => { onSpeakEnd(); resolve(); };
+//   audio.play();
+// Keep the onSpeakStart and onSpeakEnd calls so the mic still pauses
+// while she talks. Everything else in the app stays the same.
+// ===================================================================
+let chosenVoice = null;
+function pickVoice() {
+  if (!("speechSynthesis" in window)) return;
+  const vs = window.speechSynthesis.getVoices();
+  chosenVoice = vs.find(v => /en-US/i.test(v.lang) && /(David|Guy|Eric|Daniel|Google US English)/i.test(v.name)) || vs.find(v => /^en/i.test(v.lang)) || vs[0] || null;
+}
+if ("speechSynthesis" in window) { window.speechSynthesis.onvoiceschanged = pickVoice; pickVoice(); }
+
+function onSpeakStart() { convo = "speaking"; setState("speaking", "Speaking"); stopRecognition(); }
+function onSpeakEnd() { /* handled by caller */ }
+
+function speak(text) {
+  return new Promise(resolve => {
+    if (!voiceOn || !("speechSynthesis" in window)) { resolve(); return; }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    if (chosenVoice) u.voice = chosenVoice;
+    u.onstart = onSpeakStart;
+    u.onend = () => { resolve(); };
+    u.onerror = () => { resolve(); };
+    window.speechSynthesis.speak(u);
+  });
+}
+
+// ---- Core API call ----
+// NOTE FOR YOUR DOMAIN. Swap the URL below to "/.netlify/functions/brain"
+// once the Netlify function is deployed. The keyless call works only
+// inside a Claude artifact.
+async function callClaude(messages, system, tools) {
+  const body = { model: "claude-sonnet-4-6", max_tokens: 1000, messages };
+  if (system) body.system = system;
+  if (tools) body.tools = tools;
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+  });
+  const data = await r.json();
+  return data.content.filter(b => b.type === "text").map(b => b.text).join("").trim();
+}
+
+// ---- Agents ----
+async function runProducer(task) { const j = newJob("Producer"); const o = await callClaude([{ role: "user", content: task }], PRODUCER_PROMPT); finishJob(j, o); return "The script is ready in the workbench."; }
+async function runScribe(task) { const j = newJob("Scribe"); const o = await callClaude([{ role: "user", content: task }], SCRIBE_PROMPT); finishJob(j, o); return "The copy is ready in the workbench."; }
+async function runScout(task) { const j = newJob("Scout"); const o = await callClaude([{ role: "user", content: task }], SCOUT_PROMPT, [{ type: "web_search_20250305", name: "web_search" }]); finishJob(j, o); return "Scout posted the findings in the workbench."; }
+async function runField(goal) {
+  const j = newJob("Field");
+  const planRaw = await callClaude([{ role: "user", content: "Goal: " + goal }], FIELD_PLAN_PROMPT);
+  let steps = [];
+  try { steps = JSON.parse(planRaw.replace(/```json|```/g, "").trim()).steps || []; } catch (e) { steps = ["Work the goal directly"]; }
+  steps = steps.slice(0, 4);
+  steps.forEach(s => { const li = document.createElement("li"); li.textContent = s; j.stepsEl.appendChild(li); });
+  const results = []; const lis = j.stepsEl.querySelectorAll("li");
+  for (let i = 0; i < steps.length; i++) {
+    lis[i].classList.add("active");
+    const ctx = "Goal: " + goal + "\n\nEarlier results:\n" + (results.join("\n\n") || "none") + "\n\nCurrent step: " + steps[i];
+    const stepOut = await callClaude([{ role: "user", content: ctx }], FIELD_STEP_PROMPT);
+    results.push("Step " + (i + 1) + " (" + steps[i] + "):\n" + stepOut);
+    lis[i].classList.remove("active"); lis[i].classList.add("done");
+  }
+  finishJob(j, results.join("\n\n"));
+  return "Field worked through " + steps.length + " steps. Results are in the workbench.";
+}
+
+// ---- Router flow ----
+async function handleCommand(text) {
+  const clean = (text || "").trim();
+  if (!clean) { if (liveMode) resumeAwake(); return; }
+  clearAwakeTimer();
+  convo = "processing";
+  stopRecognition();
+  addMessage("you", clean);
+  history.push({ role: "user", content: clean });
+  setState("thinking", "Thinking");
+
+  let plan;
+  try {
+    const raw = await callClaude(history, ROUTER_PROMPT);
+    plan = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    history.push({ role: "assistant", content: raw });
+  } catch (e) {
+    plan = { channel: "General", companion: "Nova", mode: "reply", task: "", reply: "I did not catch that cleanly. Say it once more." };
+  }
+
+  const stateEl = addDispatch(plan.channel || "General", plan.companion || "Nova", plan.mode === "handoff" ? "dispatched" : "answered");
+  addMessage("nova", plan.reply);
+  await speak(plan.reply);
+
+  if (plan.mode === "handoff" && plan.companion && plan.companion !== "Nova") {
+    setState("thinking", "Working");
+    let summary = "";
+    try {
+      if (plan.companion === "Producer") summary = await runProducer(plan.task);
+      else if (plan.companion === "Scribe") summary = await runScribe(plan.task);
+      else if (plan.companion === "Scout") summary = await runScout(plan.task);
+      else if (plan.companion === "Field") summary = await runField(plan.task);
+    } catch (e) { summary = "The agent hit a snag. Try that request again."; }
+    if (stateEl) { stateEl.textContent = "done"; stateEl.classList.add("done"); }
+    if (summary) { addMessage("nova", summary); await speak(summary); }
+  }
+
+  if (liveMode) resumeAwake(); else setState("", "Ready");
+}
+
+// ---- Live mode plumbing ----
+function clearAwakeTimer() { if (awakeTimer) { clearTimeout(awakeTimer); awakeTimer = null; } }
+function startAwakeTimer() {
+  clearAwakeTimer();
+  awakeTimer = setTimeout(() => {
+    if (liveMode && convo === "awake") { convo = "sleeping"; setState("listening", "Listening for Nova"); setHint('Say "Nova" to wake her.'); }
+  }, AWAKE_TIMEOUT_MS);
+}
+function resumeAwake() {
+  convo = "awake";
+  setState("awake", "Your turn");
+  setHint("Go ahead, no button needed. Or wait to reset.");
+  startAwakeTimer();
+  safeStart();
+}
+
+// ---- Speech recognition ----
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+function stopRecognition() { if (recognition && recognizing) { try { recognition.stop(); } catch (e) {} } }
+function safeStart() { if (recognition && !recognizing && (convo === "sleeping" || convo === "awake")) { try { recognition.start(); } catch (e) {} } }
+
+if (SR) {
+  recognition = new SR();
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    recognizing = true;
+    if (liveMode) {
+      if (convo === "sleeping") { setState("listening", "Listening for Nova"); }
+      else if (convo === "awake") { setState("awake", "Your turn"); }
+    } else { setState("listening", "Listening"); }
+  };
+  recognition.onend = () => {
+    recognizing = false;
+    talkBtn.setAttribute("aria-pressed", "false"); talkBtn.classList.remove("active");
+    if (liveMode && (convo === "sleeping" || convo === "awake")) { setTimeout(safeStart, 350); }
+    else if (!liveMode && orb.classList.contains("listening")) { setState("", "Ready"); }
+  };
+  recognition.onerror = () => { /* let onend restart in live mode */ };
+
+  recognition.onresult = (e) => {
+    const said = (e.results[0][0].transcript || "").trim();
+    if (!said) return;
+
+    if (!liveMode) { handleCommand(said); return; }
+
+    if (convo === "sleeping") {
+      const lower = said.toLowerCase();
+      const idx = lower.indexOf(WAKE_WORD);
+      if (idx === -1) return; // not addressed to Nova, keep waiting
+      const after = said.slice(idx + WAKE_WORD.length).replace(/^[\s,.:;!?-]+/, "").trim();
+      if (after) { handleCommand(after); }
+      else { wakeAndAcknowledge(); }
+    } else if (convo === "awake") {
+      handleCommand(said);
+    }
+  };
+
+  // Push to talk, used only when live mode is off.
+  talkBtn.addEventListener("pointerdown", () => {
+    if (liveMode) return;
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    try { recognition.start(); talkBtn.classList.add("active"); talkBtn.setAttribute("aria-pressed", "true"); } catch (e) {}
+  });
+  talkBtn.addEventListener("pointerup", () => { if (!liveMode && recognizing) recognition.stop(); });
+  talkBtn.addEventListener("pointerleave", () => { if (!liveMode && recognizing) recognition.stop(); });
+} else {
+  talkBtn.textContent = "Voice not supported"; talkBtn.disabled = true;
+  liveBtn.disabled = true;
+}
+
+async function wakeAndAcknowledge() {
+  convo = "processing"; stopRecognition();
+  setState("awake", "Yes");
+  await speak("Yes?");
+  if (liveMode) resumeAwake();
+}
+
+// ---- Live toggle ----
+liveBtn.addEventListener("click", async () => {
+  liveMode = !liveMode;
+  liveBtn.classList.toggle("on", liveMode);
+  liveBtn.setAttribute("aria-pressed", String(liveMode));
+  liveBtn.textContent = liveMode ? "Live mode on" : "Live mode";
+  talkBtn.disabled = liveMode;
+  if (liveMode) {
+    convo = "sleeping";
+    setHint('Say "Nova" to wake her.');
+    setState("listening", "Listening for Nova");
+    await speak("Live mode on. Say my name when you need me.");
+    safeStart();
+  } else {
+    convo = "off"; clearAwakeTimer(); stopRecognition();
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    setHint(""); setState("", "Ready");
+  }
+});
+
+// ---- Other buttons ----
+voiceToggle.addEventListener("click", () => {
+  voiceOn = !voiceOn; voiceToggle.textContent = voiceOn ? "Voice on" : "Voice off";
+  voiceToggle.setAttribute("aria-pressed", String(voiceOn));
+  if (!voiceOn) window.speechSynthesis && window.speechSynthesis.cancel();
+});
+stopBtn.addEventListener("click", () => {
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  if (liveMode) { liveBtn.click(); }
+  else { if (recognizing && recognition) recognition.stop(); setState("", "Ready"); }
+});
+sendBtn.addEventListener("click", () => { handleCommand(textInput.value); textInput.value = ""; });
+textInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { handleCommand(textInput.value); textInput.value = ""; } });
+
+window.addEventListener("load", () => {
+  addMessage("nova", "Nova online. Hold to talk, type a command, or switch on live mode and just say my name.");
+});
+</script>
+</body>
+</html>
