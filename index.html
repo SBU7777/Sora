@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SBU Command | Sora AI</title>
+  <title>SBU Command Deck | Sora AI</title>
   <style>
     :root {
       --bg: #0d1117;
@@ -13,36 +13,38 @@
       --text-bright: #f0f6fc;
       --accent: #d97706; /* warm amber */
       --accent-soft: rgba(217, 119, 6, 0.15);
-      --agent-producer: #f59e0b;
-      --agent-scribe: #10b981;
-      --agent-scout: #3b82f6;
-      --agent-field: #8b5cf6;
+      --green: #10b981;
+      --blue: #3b82f6;
+      --red: #ef4444;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
-    /* Left Sidebar: Agents & Controls */
+    /* Left Sidebar */
     #sidebar {
       width: 280px;
       background: var(--panel);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      padding: 1rem;
-      gap: 1.5rem;
+      padding: 1.25rem;
+      gap: 1.25rem;
     }
     .brand { font-size: 1.25rem; font-weight: 700; color: var(--text-bright); display: flex; align-items: center; gap: 0.5rem; }
     .brand span { color: var(--accent); }
+    .section-title { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+
     .agents-list { display: flex; flex-direction: column; gap: 0.5rem; }
     .agent-btn {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 0.75rem 1rem;
+      padding: 0.65rem 0.85rem;
       border-radius: 6px;
       cursor: pointer;
       text-align: left;
       font-weight: 600;
+      font-size: 0.9rem;
       transition: all 0.2s;
     }
     .agent-btn:hover, .agent-btn.active {
@@ -50,15 +52,59 @@
       border-color: var(--accent);
       color: var(--text-bright);
     }
-    .toggle-group {
+
+    /* Voice Controls Card */
+    .controls-card {
       margin-top: auto;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       padding: 1rem;
-      background: rgba(0,0,0,0.2);
-      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .control-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      font-size: 0.85rem;
+      font-weight: 600;
     }
+    .btn-action {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      padding: 0.6rem 0.85rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-action:hover { background: #30363d; }
+    .btn-action.active { background: var(--green); color: #fff; border-color: var(--green); }
+    .btn-stop {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--red);
+      color: var(--red);
+    }
+    .btn-stop:hover { background: var(--red); color: #fff; }
+
+    /* Switch styling */
+    .switch { position: relative; display: inline-block; width: 38px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #30363d; transition: .3s; border-radius: 22px;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+      background-color: white; transition: .3s; border-radius: 50%;
+    }
+    input:checked + .slider { background-color: var(--accent); }
+    input:checked + .slider:before { transform: translateX(16px); }
 
     /* Main Deck */
     #deck {
@@ -79,15 +125,15 @@
     }
     .orb-container { display: flex; align-items: center; gap: 0.75rem; }
     .orb {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       background: #4b5563;
       transition: all 0.3s ease;
     }
-    .orb.listening { background: #10b981; box-shadow: 0 0 12px #10b981; }
-    .orb.thinking { background: #f59e0b; box-shadow: 0 0 12px #f59e0b; }
-    .orb.speaking { background: #3b82f6; box-shadow: 0 0 12px #3b82f6; }
+    .orb.listening { background: var(--green); box-shadow: 0 0 14px var(--green); }
+    .orb.thinking { background: var(--accent); box-shadow: 0 0 14px var(--accent); }
+    .orb.speaking { background: var(--blue); box-shadow: 0 0 14px var(--blue); }
 
     #transcript {
       flex: 1;
@@ -120,7 +166,7 @@
       outline: none;
     }
     #userInput:focus { border-color: var(--accent); }
-    .btn {
+    .btn-send {
       background: var(--accent);
       color: #fff;
       border: none;
@@ -129,7 +175,7 @@
       font-weight: 600;
       cursor: pointer;
     }
-    .btn:hover { opacity: 0.9; }
+    .btn-send:hover { opacity: 0.9; }
   </style>
 </head>
 <body>
@@ -137,17 +183,43 @@
   <div id="sidebar">
     <div class="brand">SBU <span>Command</span></div>
     
-    <div class="agents-list">
-      <div style="font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 0.25rem;">Active Agent</div>
-      <button class="agent-btn active" onclick="setAgent('Producer')">🎙️ Producer (OMI Script)</button>
-      <button class="agent-btn" onclick="setAgent('Scribe')">✍️ Scribe (Copy/Devo)</button>
-      <button class="agent-btn" onclick="setAgent('Scout')">🔍 Scout (Research)</button>
-      <button class="agent-btn" onclick="setAgent('Field')">⚡ Field (Exec Plans)</button>
+    <div>
+      <div class="section-title">Active Agent</div>
+      <div class="agents-list">
+        <button class="agent-btn active" onclick="setAgent('Producer')">🎙️ Producer (OMI Script)</button>
+        <button class="agent-btn" onclick="setAgent('Scribe')">✍️ Scribe (Copy/Devo)</button>
+        <button class="agent-btn" onclick="setAgent('Scout')">🔍 Scout (Research)</button>
+        <button class="agent-btn" onclick="setAgent('Field')">⚡ Field (Exec Plans)</button>
+      </div>
     </div>
 
-    <div class="toggle-group">
-      <span style="font-size: 0.85rem; font-weight: 600;">Live Mode</span>
-      <input type="checkbox" id="liveToggle" onchange="toggleLiveMode()" />
+    <!-- Voice Control Panel -->
+    <div class="controls-card">
+      <div class="section-title">Voice & Audio Controls</div>
+      
+      <div class="control-row">
+        <span>Live Mode</span>
+        <label class="switch">
+          <input type="checkbox" id="liveToggle" onchange="toggleLiveMode()">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="control-row">
+        <span>Voice Output</span>
+        <label class="switch">
+          <input type="checkbox" id="voiceToggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <button id="holdToTalkBtn" class="btn-action" onmousedown="startHoldTalk()" onmouseup="stopHoldTalk()" ontouchstart="startHoldTalk()" ontouchend="stopHoldTalk()">
+        🎙️ Hold to Talk
+      </button>
+
+      <button class="btn-action btn-stop" onclick="stopEverything()">
+        ⏹️ Stop
+      </button>
     </div>
   </div>
 
@@ -167,14 +239,16 @@
     </div>
 
     <div id="input-area">
-      <input type="text" id="userInput" placeholder="Ask Sora anything or give an agent task..." onkeydown="handleKey(event)" />
-      <button class="btn" onclick="sendMessage()">Send</button>
+      <input type="text" id="userInput" placeholder="Ask Sora anything or speak command..." onkeydown="handleKey(event)" />
+      <button class="btn-send" onclick="sendMessage()">Send</button>
     </div>
   </div>
 
   <script>
     let activeAgent = "Producer";
     let messageHistory = [];
+    let recognition = null;
+    let isHolding = false;
 
     const agentPrompts = {
       Producer: "You are Sora acting as Producer for Struggling Brothers United. You format all podcast concepts, show notes, and teasers using clean, punchy outlines. Maintain a warm, grounded, authentic tone for men aged 18 to 60. Avoid corporate jargon, em dashes, semicolons, and hashtags.",
@@ -212,19 +286,13 @@
         const res = await fetch("/.netlify/functions/brain", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system: systemPrompt,
-            messages: userMessages
-          })
+          body: JSON.stringify({ system: systemPrompt, messages: userMessages })
         });
-
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           throw new Error(errData.error || `Server responded with ${res.status}`);
         }
-
-        const data = await res.json();
-        return data;
+        return await res.json();
       } catch (err) {
         console.error("Brain call error:", err);
         throw err;
@@ -247,20 +315,28 @@
         const response = await callBrain(system, messageHistory);
         const reply = response.content?.[0]?.text || "No response received.";
 
-        setOrbState("speaking", "Sora Speaking");
         appendMessage("assistant", reply);
         messageHistory.push({ role: "assistant", content: reply });
 
-        // Text-to-speech if speech synthesis is supported
-        if ('speechSynthesis' in window) {
+        const voiceEnabled = document.getElementById('voiceToggle').checked;
+        if (voiceEnabled && 'speechSynthesis' in window) {
+          setOrbState("speaking", "Speaking");
           const utterance = new SpeechSynthesisUtterance(reply);
-          utterance.onend = () => setOrbState("", "Sora Idle");
+          utterance.onend = () => {
+            setOrbState("", "Sora Idle");
+            if (document.getElementById('liveToggle').checked) {
+              startLiveRecognition();
+            }
+          };
           speechSynthesis.speak(utterance);
         } else {
           setOrbState("", "Sora Idle");
+          if (document.getElementById('liveToggle').checked) {
+            startLiveRecognition();
+          }
         }
       } catch (err) {
-        appendMessage("assistant", `⚠️ Connection Error: ${err.message}`);
+        appendMessage("assistant", `⚠️ Error: ${err.message}`);
         setOrbState("", "Sora Error");
       }
     }
@@ -269,40 +345,84 @@
       if (e.key === "Enter") sendMessage();
     }
 
+    function stopEverything() {
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+      }
+      if (recognition) {
+        recognition.stop();
+      }
+      document.getElementById('liveToggle').checked = false;
+      setOrbState("", "Sora Stopped");
+    }
+
+    /* Voice Recognition Engine */
+    function initRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return null;
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      return rec;
+    }
+
     function toggleLiveMode() {
-      const enabled = document.getElementById('liveToggle').checked;
-      if (enabled) {
-        startVoiceRecognition();
+      const isLive = document.getElementById('liveToggle').checked;
+      if (isLive) {
+        startLiveRecognition();
+      } else {
+        if (recognition) recognition.stop();
+        setOrbState("", "Sora Idle");
       }
     }
 
-    function startVoiceRecognition() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("Speech Recognition not supported on this browser.");
-        document.getElementById('liveToggle').checked = false;
-        return;
-      }
+    function startLiveRecognition() {
+      if (!recognition) recognition = initRecognition();
+      if (!recognition) return alert("Speech recognition not supported in this browser.");
 
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      recognition.onstart = () => setOrbState("listening", "Listening...");
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        document.getElementById('userInput').value = transcript;
+      recognition.onstart = () => setOrbState("listening", "Live Mode On (Listening)");
+      recognition.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        document.getElementById('userInput').value = text;
         sendMessage();
       };
       recognition.onerror = () => setOrbState("", "Sora Idle");
       recognition.onend = () => {
-        if (document.getElementById('liveToggle').checked) {
-          recognition.start();
+        if (document.getElementById('liveToggle').checked && !speechSynthesis.speaking) {
+          try { recognition.start(); } catch(e){}
         }
       };
+      try { recognition.start(); } catch(e){}
+    }
 
-      recognition.start();
+    function startHoldTalk() {
+      isHolding = true;
+      document.getElementById('holdToTalkBtn').classList.add('active');
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      
+      if (!recognition) recognition = initRecognition();
+      if (!recognition) return;
+
+      recognition.onstart = () => setOrbState("listening", "Listening...");
+      recognition.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        document.getElementById('userInput').value = text;
+        sendMessage();
+      };
+      recognition.onend = () => {
+        document.getElementById('holdToTalkBtn').classList.remove('active');
+      };
+      try { recognition.start(); } catch(e){}
+    }
+
+    function stopHoldTalk() {
+      isHolding = false;
+      document.getElementById('holdToTalkBtn').classList.remove('active');
+      if (recognition) {
+        recognition.stop();
+      }
     }
   </script>
 </body>
 </html>
+3 Quick Steps to Save It:
