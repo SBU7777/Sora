@@ -73,10 +73,10 @@
   .transcript { margin-top: 22px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; max-height: 38vh; }
   .msg { border-radius: 12px; padding: 14px 16px; max-width: 92%; }
   .msg.you { align-self: flex-end; background: var(--steel); color: #fff; }
-  .msg.nova { align-self: flex-start; background: var(--black); border: 1px solid var(--steel); border-left: 4px solid var(--blue); }
+  .msg.sora { align-self: flex-start; background: var(--black); border: 1px solid var(--steel); border-left: 4px solid var(--blue); }
   .msg .who { font-family: var(--head); font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-bottom: 4px; }
   .msg.you .who { color: var(--gold); }
-  .msg.nova .who { color: var(--blue); }
+  .msg.sora .who { color: var(--blue); }
 
   .dispatch h2, .workbench h2 { font-family: var(--head); font-size: 24px; letter-spacing: 2px; color: var(--gray); text-transform: uppercase; border-bottom: 1px solid var(--steel); padding-bottom: 10px; margin-bottom: 14px; }
   .dispatch-feed { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 40vh; }
@@ -137,7 +137,7 @@
     <aside class="dispatch" aria-label="Dispatch panel">
       <h2>Dispatch</h2>
       <div id="dispatchFeed" class="dispatch-feed">
-        <div class="dispatch-empty">Routing appears here as Nova handles each request.</div>
+        <div class="dispatch-empty">Routing appears here as Sora handles each request.</div>
       </div>
       <div class="pillars" aria-label="SBU pillars">
         <span class="pillar">Identity</span><span class="pillar">Freedom</span><span class="pillar">Faith</span><span class="pillar">Purpose</span><span class="pillar">Brotherhood</span>
@@ -148,20 +148,20 @@
   <div class="workbench-wrap">
     <section class="workbench" aria-label="Agent workbench">
       <h2>Workbench</h2>
-      <div id="jobs"><p class="dispatch-empty">When Nova hands a job to an agent, the work shows up here.</p></div>
+      <div id="jobs"><p class="dispatch-empty">When Sora hands a job to an agent, the work shows up here.</p></div>
     </section>
   </div>
 
-  <footer>Nova core online. Four agents standing by: Producer, Scribe, Scout, Field.</footer>
+  <footer>Sora core online. Four agents standing by: Producer, Scribe, Scout, Field.</footer>
 
 <script>
 // ===================================================================
 // SBU COMMAND. Voice-first assistant, four working agents, and live mode.
-// Live mode: say "Nova" to wake her, then talk back and forth hands-free.
+// Live mode: say "Sora" to wake her, then talk back and forth hands-free.
 // ===================================================================
-const ASSISTANT_NAME = "Nova";
-const WAKE_WORD = "nova";
-const AWAKE_TIMEOUT_MS = 12000; // how long she keeps listening after a turn before returning to wake-word watch
+const ASSISTANT_NAME = "Sora";
+const WAKE_WORD = "sora";
+const AWAKE_TIMEOUT_MS = 12000;
 
 const HOUSE = `House rules you always follow:
 - Never use em dashes anywhere. Use commas, periods, or reworded phrasing instead.
@@ -169,7 +169,7 @@ const HOUSE = `House rules you always follow:
 - SBU tagline: Breaking the Silence. Building Brotherhood. Standing Together.
 - The five pillars are Identity, Freedom, Faith, Purpose, Brotherhood.`;
 
-const ROUTER_PROMPT = `You are Nova, the orchestrator for SBU Command.
+const ROUTER_PROMPT = `You are Sora, the orchestrator for SBU Command.
 ${HOUSE}
 For every request you either answer it yourself or hand it to one agent.
 Agents:
@@ -179,7 +179,7 @@ Agents:
 - Field: a general agent that plans any goal into steps and works through them.
 Choose handoff only when the request is a real production or research job. Chat, questions, and quick help you answer yourself. Keep spoken replies short since they are read aloud.
 Respond ONLY with a JSON object, no markdown fences, in exactly this shape:
-{"channel":"General or SBU Studio or Research or Creative","companion":"Nova or Producer or Scribe or Scout or Field","mode":"reply or handoff","task":"a clear instruction for the agent, or empty if reply","reply":"what Nova says out loud to Robert now"}`;
+{"channel":"General or SBU Studio or Research or Creative","companion":"Sora or Producer or Scribe or Scout or Field","mode":"reply or handoff","task":"a clear instruction for the agent, or empty if reply","reply":"what Sora says out loud to Robert now"}`;
 
 const PRODUCER_PROMPT = `You are Producer, the podcast script agent for SBU Command.
 ${HOUSE}
@@ -205,7 +205,7 @@ Complete only the current step using the goal and any earlier results as context
 let history = [];
 let voiceOn = true;
 let liveMode = false;
-let convo = "off";       // off, sleeping, awake, processing, speaking
+let convo = "off";
 let recognizing = false;
 let awakeTimer = null;
 
@@ -229,11 +229,12 @@ function setHint(t) { liveHint.textContent = t || ""; }
 
 function addMessage(who, text) {
   const el = document.createElement("div");
-  el.className = "msg " + (who === "you" ? "you" : "nova");
+  el.className = "msg " + (who === "you" ? "you" : "sora");
   el.innerHTML = '<span class="who">' + (who === "you" ? "You" : ASSISTANT_NAME) + "</span>";
   const body = document.createElement("div"); body.textContent = text; el.appendChild(body);
   transcript.appendChild(el); transcript.scrollTop = transcript.scrollHeight;
 }
+
 function addDispatch(channel, companion, state) {
   const empty = dispatchFeed.querySelector(".dispatch-empty"); if (empty) empty.remove();
   const el = document.createElement("div"); el.className = "dispatch-item";
@@ -241,31 +242,44 @@ function addDispatch(channel, companion, state) {
   dispatchFeed.insertBefore(el, dispatchFeed.firstChild);
   return el.querySelector(".state");
 }
+
 function newJob(agent) {
   const empty = jobs.querySelector(".dispatch-empty"); if (empty) empty.remove();
   const job = document.createElement("div"); job.className = "job";
-  job.innerHTML = '<div class="job-head"><span class="job-badge">' + agent + '</span><span class="job-state">working</span></div><ul class="job-steps"></ul><div class="job-output" style="display:none"></div><div class="job-actions" style="display:none"><button class="btn-primary btn-small copyBtn">Copy output</button></div>';
+  job.innerHTML = '<div class="job-head"><span class="job-badge">' + agent + '</span><span class="job-state">working</span></div><ul class="job-steps"></ul><div class="job-output" style="display:none"></div><div class="job-actions" style="display:none"><button class="btn-primary btn-small copyBtn">Copy output</button><button class="btn-ghost btn-small vaultBtn">Save to Vault</button></div>';
   jobs.insertBefore(job, jobs.firstChild);
-  return { stateEl: job.querySelector(".job-state"), stepsEl: job.querySelector(".job-steps"), outEl: job.querySelector(".job-output"), actionsEl: job.querySelector(".job-actions"), copyEl: job.querySelector(".copyBtn") };
+  return { 
+    agent: agent,
+    stateEl: job.querySelector(".job-state"), 
+    stepsEl: job.querySelector(".job-steps"), 
+    outEl: job.querySelector(".job-output"), 
+    actionsEl: job.querySelector(".job-actions"), 
+    copyEl: job.querySelector(".copyBtn"),
+    vaultEl: job.querySelector(".vaultBtn")
+  };
 }
+
 function finishJob(job, text) {
   job.stateEl.textContent = "done"; job.stateEl.classList.add("done");
   job.outEl.style.display = "block"; job.outEl.textContent = text;
   job.actionsEl.style.display = "flex";
-  job.copyEl.addEventListener("click", () => { navigator.clipboard.writeText(text); job.copyEl.textContent = "Copied"; setTimeout(() => { job.copyEl.textContent = "Copy output"; }, 1500); });
+  job.copyEl.addEventListener("click", () => { 
+    navigator.clipboard.writeText(text); 
+    job.copyEl.textContent = "Copied"; 
+    setTimeout(() => { job.copyEl.textContent = "Copy output"; }, 1500); 
+  });
+  job.vaultEl.addEventListener("click", () => {
+    const blob = new Blob([text], { type: "text/markdown" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${job.agent}_${new Date().toISOString().slice(0,10)}.md`;
+    a.click();
+    job.vaultEl.textContent = "Saved";
+    setTimeout(() => { job.vaultEl.textContent = "Save to Vault"; }, 1500);
+  });
 }
 
-// ===================================================================
-// VOICE OUTPUT. This is the single place Nova speaks.
-// TO USE YOUR OMI CLONED VOICE, replace the body of speak() with a call
-// that fetches OMI audio for the text and plays it, for example:
-//   const audio = new Audio(urlFromYourOmiFunction);
-//   audio.onplay = () => onSpeakStart();
-//   audio.onended = () => { onSpeakEnd(); resolve(); };
-//   audio.play();
-// Keep the onSpeakStart and onSpeakEnd calls so the mic still pauses
-// while she talks. Everything else in the app stays the same.
-// ===================================================================
+// ---- Voice output ----
 let chosenVoice = null;
 function pickVoice() {
   if (!("speechSynthesis" in window)) return;
@@ -275,7 +289,6 @@ function pickVoice() {
 if ("speechSynthesis" in window) { window.speechSynthesis.onvoiceschanged = pickVoice; pickVoice(); }
 
 function onSpeakStart() { convo = "speaking"; setState("speaking", "Speaking"); stopRecognition(); }
-function onSpeakEnd() { /* handled by caller */ }
 
 function speak(text) {
   return new Promise(resolve => {
@@ -290,15 +303,12 @@ function speak(text) {
   });
 }
 
-// ---- Core API call ----
-// NOTE FOR YOUR DOMAIN. Swap the URL below to "/.netlify/functions/brain"
-// once the Netlify function is deployed. The keyless call works only
-// inside a Claude artifact.
-async function callClaude(messages, system, tools) {
-  const body = { model: "claude-sonnet-4-6", max_tokens: 1000, messages };
+// ---- Backend Function Call ----
+async function callBrain(messages, system, tools) {
+  const body = { messages };
   if (system) body.system = system;
   if (tools) body.tools = tools;
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
+  const r = await fetch("/.netlify/functions/brain", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
   });
   const data = await r.json();
@@ -306,12 +316,12 @@ async function callClaude(messages, system, tools) {
 }
 
 // ---- Agents ----
-async function runProducer(task) { const j = newJob("Producer"); const o = await callClaude([{ role: "user", content: task }], PRODUCER_PROMPT); finishJob(j, o); return "The script is ready in the workbench."; }
-async function runScribe(task) { const j = newJob("Scribe"); const o = await callClaude([{ role: "user", content: task }], SCRIBE_PROMPT); finishJob(j, o); return "The copy is ready in the workbench."; }
-async function runScout(task) { const j = newJob("Scout"); const o = await callClaude([{ role: "user", content: task }], SCOUT_PROMPT, [{ type: "web_search_20250305", name: "web_search" }]); finishJob(j, o); return "Scout posted the findings in the workbench."; }
+async function runProducer(task) { const j = newJob("Producer"); const o = await callBrain([{ role: "user", content: task }], PRODUCER_PROMPT); finishJob(j, o); return "The script is ready in the workbench."; }
+async function runScribe(task) { const j = newJob("Scribe"); const o = await callBrain([{ role: "user", content: task }], SCRIBE_PROMPT); finishJob(j, o); return "The copy is ready in the workbench."; }
+async function runScout(task) { const j = newJob("Scout"); const o = await callBrain([{ role: "user", content: task }], SCOUT_PROMPT, [{ type: "web_search_20250305", name: "web_search" }]); finishJob(j, o); return "Scout posted the findings in the workbench."; }
 async function runField(goal) {
   const j = newJob("Field");
-  const planRaw = await callClaude([{ role: "user", content: "Goal: " + goal }], FIELD_PLAN_PROMPT);
+  const planRaw = await callBrain([{ role: "user", content: "Goal: " + goal }], FIELD_PLAN_PROMPT);
   let steps = [];
   try { steps = JSON.parse(planRaw.replace(/```json|```/g, "").trim()).steps || []; } catch (e) { steps = ["Work the goal directly"]; }
   steps = steps.slice(0, 4);
@@ -320,7 +330,7 @@ async function runField(goal) {
   for (let i = 0; i < steps.length; i++) {
     lis[i].classList.add("active");
     const ctx = "Goal: " + goal + "\n\nEarlier results:\n" + (results.join("\n\n") || "none") + "\n\nCurrent step: " + steps[i];
-    const stepOut = await callClaude([{ role: "user", content: ctx }], FIELD_STEP_PROMPT);
+    const stepOut = await callBrain([{ role: "user", content: ctx }], FIELD_STEP_PROMPT);
     results.push("Step " + (i + 1) + " (" + steps[i] + "):\n" + stepOut);
     lis[i].classList.remove("active"); lis[i].classList.add("done");
   }
@@ -341,18 +351,18 @@ async function handleCommand(text) {
 
   let plan;
   try {
-    const raw = await callClaude(history, ROUTER_PROMPT);
+    const raw = await callBrain(history, ROUTER_PROMPT);
     plan = JSON.parse(raw.replace(/```json|```/g, "").trim());
     history.push({ role: "assistant", content: raw });
   } catch (e) {
-    plan = { channel: "General", companion: "Nova", mode: "reply", task: "", reply: "I did not catch that cleanly. Say it once more." };
+    plan = { channel: "General", companion: "Sora", mode: "reply", task: "", reply: "I did not catch that cleanly. Say it once more." };
   }
 
-  const stateEl = addDispatch(plan.channel || "General", plan.companion || "Nova", plan.mode === "handoff" ? "dispatched" : "answered");
-  addMessage("nova", plan.reply);
+  const stateEl = addDispatch(plan.channel || "General", plan.companion || "Sora", plan.mode === "handoff" ? "dispatched" : "answered");
+  addMessage("sora", plan.reply);
   await speak(plan.reply);
 
-  if (plan.mode === "handoff" && plan.companion && plan.companion !== "Nova") {
+  if (plan.mode === "handoff" && plan.companion && plan.companion !== "Sora") {
     setState("thinking", "Working");
     let summary = "";
     try {
@@ -362,7 +372,7 @@ async function handleCommand(text) {
       else if (plan.companion === "Field") summary = await runField(plan.task);
     } catch (e) { summary = "The agent hit a snag. Try that request again."; }
     if (stateEl) { stateEl.textContent = "done"; stateEl.classList.add("done"); }
-    if (summary) { addMessage("nova", summary); await speak(summary); }
+    if (summary) { addMessage("sora", summary); await speak(summary); }
   }
 
   if (liveMode) resumeAwake(); else setState("", "Ready");
@@ -373,7 +383,7 @@ function clearAwakeTimer() { if (awakeTimer) { clearTimeout(awakeTimer); awakeTi
 function startAwakeTimer() {
   clearAwakeTimer();
   awakeTimer = setTimeout(() => {
-    if (liveMode && convo === "awake") { convo = "sleeping"; setState("listening", "Listening for Nova"); setHint('Say "Nova" to wake her.'); }
+    if (liveMode && convo === "awake") { convo = "sleeping"; setState("listening", "Listening for Sora"); setHint('Say "Sora" to wake her.'); }
   }, AWAKE_TIMEOUT_MS);
 }
 function resumeAwake() {
@@ -399,7 +409,7 @@ if (SR) {
   recognition.onstart = () => {
     recognizing = true;
     if (liveMode) {
-      if (convo === "sleeping") { setState("listening", "Listening for Nova"); }
+      if (convo === "sleeping") { setState("listening", "Listening for Sora"); }
       else if (convo === "awake") { setState("awake", "Your turn"); }
     } else { setState("listening", "Listening"); }
   };
@@ -409,7 +419,7 @@ if (SR) {
     if (liveMode && (convo === "sleeping" || convo === "awake")) { setTimeout(safeStart, 350); }
     else if (!liveMode && orb.classList.contains("listening")) { setState("", "Ready"); }
   };
-  recognition.onerror = () => { /* let onend restart in live mode */ };
+  recognition.onerror = () => { };
 
   recognition.onresult = (e) => {
     const said = (e.results[0][0].transcript || "").trim();
@@ -420,7 +430,7 @@ if (SR) {
     if (convo === "sleeping") {
       const lower = said.toLowerCase();
       const idx = lower.indexOf(WAKE_WORD);
-      if (idx === -1) return; // not addressed to Nova, keep waiting
+      if (idx === -1) return;
       const after = said.slice(idx + WAKE_WORD.length).replace(/^[\s,.:;!?-]+/, "").trim();
       if (after) { handleCommand(after); }
       else { wakeAndAcknowledge(); }
@@ -429,7 +439,6 @@ if (SR) {
     }
   };
 
-  // Push to talk, used only when live mode is off.
   talkBtn.addEventListener("pointerdown", () => {
     if (liveMode) return;
     window.speechSynthesis && window.speechSynthesis.cancel();
@@ -458,8 +467,8 @@ liveBtn.addEventListener("click", async () => {
   talkBtn.disabled = liveMode;
   if (liveMode) {
     convo = "sleeping";
-    setHint('Say "Nova" to wake her.');
-    setState("listening", "Listening for Nova");
+    setHint('Say "Sora" to wake her.');
+    setState("listening", "Listening for Sora");
     await speak("Live mode on. Say my name when you need me.");
     safeStart();
   } else {
@@ -484,7 +493,7 @@ sendBtn.addEventListener("click", () => { handleCommand(textInput.value); textIn
 textInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { handleCommand(textInput.value); textInput.value = ""; } });
 
 window.addEventListener("load", () => {
-  addMessage("nova", "Nova online. Hold to talk, type a command, or switch on live mode and just say my name.");
+  addMessage("sora", "Sora online. Hold to talk, type a command, or switch on live mode and just say my name.");
 });
 </script>
 </body>
