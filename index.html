@@ -289,9 +289,24 @@
       setStatus("Stopped", "");
     }
 
-    async function sendCommand() {
+    function speakText(text, callback) {
+      if (voiceEnabled && 'speechSynthesis' in window) {
+        setStatus("Speaking", "speaking");
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onend = () => {
+          setStatus("Ready", "");
+          if (callback) callback();
+        };
+        speechSynthesis.speak(utterance);
+      } else {
+        setStatus("Ready", "");
+        if (callback) callback();
+      }
+    }
+
+    async function sendCommand(customText) {
       const input = document.getElementById('commandInput');
-      const text = input.value.trim();
+      const text = customText !== undefined ? customText.trim() : input.value.trim();
       if (!text) return;
 
       appendMessage("You", text);
@@ -316,21 +331,13 @@
         appendMessage("Sora", reply);
         messageHistory.push({ role: "assistant", content: reply });
 
-        if (voiceEnabled && 'speechSynthesis' in window) {
-          setStatus("Speaking", "speaking");
-          const utterance = new SpeechSynthesisUtterance(reply);
-          utterance.onend = () => {
-            setStatus("Ready", "");
-            if (isLive) startListening();
-          };
-          speechSynthesis.speak(utterance);
-        } else {
-          setStatus("Ready", "");
+        speakText(reply, () => {
           if (isLive) startListening();
-        }
+        });
       } catch (err) {
         appendMessage("System", "Error communicating with Gemini: " + err.message);
         setStatus("Ready", "");
+        if (isLive) startListening();
       }
     }
 
@@ -342,6 +349,7 @@
       box.scrollTop = box.scrollHeight;
     }
 
+    /* Speech Recognition Engine */
     function getSpeechEngine() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) return null;
@@ -356,11 +364,41 @@
       const btn = document.getElementById('liveBtn');
       if (isLive) {
         btn.classList.add('active');
-        startListening();
+        speakText("Live mode active. I am listening.", () => {
+          startListening();
+        });
       } else {
         btn.classList.remove('active');
         if (recognition) recognition.stop();
-        setStatus("Ready", "");
+        speakText("Live mode off.");
+      }
+    }
+
+    function handleLiveSpeech(spokenText) {
+      const lower = spokenText.toLowerCase().trim();
+      
+      // Check if user spoke the wake word Sora / Sarah
+      if (lower.includes("sora") || lower.includes("sarah") || lower.includes("zora")) {
+        // Remove the wake word trigger from the phrase
+        let cleaned = lower.replace(/^(hey\s+|hi\s+|hello\s+)?(sora|sarah|zora)[\s,.]*/i, '').trim();
+
+        if (cleaned.length === 0) {
+          // You just called her name
+          appendMessage("You", spokenText);
+          const acknowledgment = "I'm right here. What do you need?";
+          appendMessage("Sora", acknowledgment);
+          speakText(acknowledgment, () => {
+            if (isLive) startListening();
+          });
+        } else {
+          // You called her name and gave a command
+          sendCommand(spokenText);
+        }
+      } else {
+        // Wake word wasn't heard, keep listening silently
+        if (isLive) {
+          startListening();
+        }
       }
     }
 
@@ -371,10 +409,14 @@
       recognition.onstart = () => setStatus("Listening...", "listening");
       recognition.onresult = (e) => {
         const spoken = e.results[0][0].transcript;
-        document.getElementById('commandInput').value = spoken;
-        sendCommand();
+        handleLiveSpeech(spoken);
       };
-      recognition.onerror = () => setStatus("Ready", "");
+      recognition.onerror = () => {
+        setStatus("Ready", "");
+        if (isLive && !speechSynthesis.speaking) {
+          setTimeout(() => startListening(), 500);
+        }
+      };
       recognition.onend = () => {
         if (isLive && !speechSynthesis.speaking) {
           try { recognition.start(); } catch(e){}
@@ -391,8 +433,9 @@
 
       recognition.onstart = () => setStatus("Listening...", "listening");
       recognition.onresult = (e) => {
-        document.getElementById('commandInput').value = e.results[0][0].transcript;
-        sendCommand();
+        const spoken = e.results[0][0].transcript;
+        document.getElementById('commandInput').value = spoken;
+        sendCommand(spoken);
       };
       try { recognition.start(); } catch(e){}
     }
